@@ -5,7 +5,7 @@ from fuzzywuzzy import process, fuzz # For identifying potential duplicates
 
 # --- Configuration ---
 ALLOWED_UOMS = ['g', 'kg', 'l', 'ml', 'ea']
-# Columns to check for missing data
+
 MISSING_CHECK_COLS = ['Item size', 'Item Unit of Measure', '€ Price per unit (excluding VAT)', 'Tax rate', 'Supplier code']
 # Columns to check for numerical data (after cleaning)
 # Status column name is the value
@@ -57,11 +57,7 @@ def clean_numeric(value, is_supplier_code=False):
         return np.nan
     cleaned_value_str = str(value).strip()
     if is_supplier_code:
-        # For supplier codes, allow only digits after stripping.
-        # If it's meant to be purely numeric for calculations, this might change.
-        # If it can have leading zeros and is an identifier, string type is fine.
-        # This implementation checks if it's all digits, then returns as string.
-        # If it should be an int, convert with pd.to_numeric after isdigit() check.
+
         return cleaned_value_str if cleaned_value_str.isdigit() else np.nan # Returns string if all digits, else NaN
     else:
         try:
@@ -80,7 +76,6 @@ def validate_items_data(items_df: pd.DataFrame):
     items_df_validated = items_df.copy()
 
     # --- Create cleaned/numeric versions of columns for internal use ---
-    # Use .get() with a default pd.Series to prevent KeyError if a column is missing
     items_df_validated['cleaned_item_name'] = items_df_validated.get(ITEM_NAME_COL, pd.Series(dtype='object')).apply(clean_text_for_matching)
     items_df_validated['cleaned_supplier'] = items_df_validated.get(SUPPLIER_COL, pd.Series(dtype='object')).apply(clean_text_for_matching)
     items_df_validated['numeric_item_size'] = items_df_validated.get(ITEM_SIZE_COL, pd.Series(dtype='object')).apply(lambda x: clean_numeric(x, is_supplier_code=False))
@@ -121,8 +116,7 @@ def validate_items_data(items_df: pd.DataFrame):
             for i, original_value in enumerate(items_df_validated[col_original]):
                 if pd.isna(original_value) or str(original_value).strip() == "":
                     statuses[i] = "Missing"
-                # For supplier code, numeric_series_to_check contains strings or NaN.
-                # If it's NaN here, it means clean_numeric(is_supplier_code=True) returned NaN, indicating non-digit.
+
                 elif pd.isna(numeric_series_to_check.iloc[i]):
                     statuses[i] = "Non-Numeric/Invalid Format" # More specific for supplier code
                 else:
@@ -260,10 +254,8 @@ def validate_items_data(items_df: pd.DataFrame):
 if __name__ == "__main__":
     print(f"Script is running. Current working directory: {os.getcwd()}")
 
-    # Define input file path relative to the project root
     items_csv_file_path = os.path.join('data', 'items.csv')
 
-    # Define the output directory and file path
     output_dir = 'output'
     os.makedirs(output_dir, exist_ok=True) # Create output directory if it doesn't exist
     output_csv_file_path = os.path.join(output_dir, 'items_with_validation_flags.csv')
@@ -300,12 +292,10 @@ if __name__ == "__main__":
             # Get status columns that were actually created
             final_status_cols = [col for col in status_cols_ordered if col in items_validated_df.columns]
 
-            # Combine original columns and status columns, avoiding duplicates
-            # Ensure original columns come first, then status columns not already in original
+
             final_cols_order = original_cols + [col for col in final_status_cols if col not in original_cols]
 
-            # Add any other newly created columns that are not in original_cols or final_status_cols
-            # (e.g. if a new helper column was accidentally not dropped)
+
             other_new_cols = [col for col in items_validated_df.columns if col not in final_cols_order]
             final_cols_order.extend(other_new_cols)
             
@@ -335,18 +325,18 @@ if __name__ == "__main__":
         if 'Size_Magnitude_Flag' in items_validated_df: filter_conditions.append(items_validated_df['Size_Magnitude_Flag'].str.startswith("Potentially Too Large", na=False))
         if 'Potential_Duplicates_Info' in items_validated_df: filter_conditions.append(items_validated_df['Potential_Duplicates_Info'] != "None")
 
-        if filter_conditions: # Check if any conditions were added
+        if filter_conditions: 
             issues_df = items_validated_df[np.logical_or.reduce(filter_conditions)]
             if not issues_df.empty:
                 print(f"Found {len(issues_df)} rows with potential issues.")
                 print("Example rows with issues (showing key columns and flags):")
                 cols_to_show_base = [ITEM_NAME_COL, SUPPLIER_COL, ITEM_SIZE_COL, PRICE_COL, 'Supplier code', UOM_COL]
-                # Use the status_cols_ordered from above, as it defines the desired order and existence
+              
                 cols_to_show_status_actual = [col for col in status_cols_ordered if col in issues_df.columns]
                 
                 final_cols_to_show = [col for col in cols_to_show_base if col in issues_df.columns] + \
                                      cols_to_show_status_actual
-                # Remove duplicates if any base columns are also status columns (unlikely here but good practice)
+              
                 final_cols_to_show = sorted(list(set(final_cols_to_show)), key=final_cols_to_show.index)
                 
                 print(issues_df[final_cols_to_show].head(10))
@@ -358,3 +348,5 @@ if __name__ == "__main__":
         print("\nNo validated items data to summarize.")
 
     print(f"\nReview '{output_csv_file_path}' for detailed flags on all items.")
+
+

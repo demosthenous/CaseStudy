@@ -3,22 +3,6 @@ import pandas as pd
 import os
 
 def find_missing_recipe_items_from_files(items_file_path: str, recipes_file_path: str):
-    """
-    Identifies items listed in recipes that are not found in the items list,
-    reading data directly from CSV files. It also returns the recipes DataFrame
-    augmented with status columns for each ingredient.
-
-    Args:
-        items_file_path: Path to the items CSV file.
-        recipes_file_path: Path to the recipes CSV file.
-
-    Returns:
-        A tuple: (missing_ingredients_report, recipes_df_augmented).
-        - missing_ingredients_report: A list of dictionaries, where each dictionary contains
-          'recipe_name', 'missing_ingredient_name', 'cleaned_missing_ingredient_name', and 'ingredient_column'.
-        - recipes_df_augmented: The recipes DataFrame with added status columns.
-        Returns (list_with_error_dict, pd.DataFrame()) if file reading fails or critical columns are missing.
-    """
 
     # --- Load Data into Pandas DataFrames from files ---
     try:
@@ -66,9 +50,9 @@ def find_missing_recipe_items_from_files(items_file_path: str, recipes_file_path
     missing_ingredients_report = []
     recipes_df_augmented = recipes_df.copy() # Work on a copy
 
-    # --- Iterate Through Recipes and Ingredients to build report and augment DataFrame ---
+    # --- Iterate Through Recipes and Ingredients to build report ---
     for ing_idx, ing_name_col in enumerate(ingredient_name_cols):
-        # Derive the status column name, e.g., "Status (Ingredient 1)"
+        # Derive the status column name
         ingredient_identifier = ing_name_col.split('(', 1)[1] if '(' in ing_name_col else f"UnknownIngredient_{ing_idx+1})"
         status_col_name = f"Status ({ingredient_identifier}"
 
@@ -85,9 +69,7 @@ def find_missing_recipe_items_from_files(items_file_path: str, recipes_file_path
                     # Add to the separate report list
                     missing_ingredients_report.append({
                         'recipe_name': recipe_name,
-                        'missing_ingredient_name': ingredient_name,
-                        'cleaned_missing_ingredient_name': cleaned_ingredient_name, # Added for consistency if needed in report
-                        'ingredient_column': ing_name_col
+                        'missing_ingredient_name': ingredient_name
                     })
                 else:
                     current_status = "FOUND"
@@ -110,13 +92,11 @@ def find_missing_recipe_items_from_files(items_file_path: str, recipes_file_path
 if __name__ == "__main__":
     print(f"Script is running. Current working directory: {os.getcwd()}")
 
-    # Define input file paths relative to the project root
     items_csv_file = os.path.join('data', 'items.csv')
     recipes_csv_file = os.path.join('data', 'recipes.csv')
 
     # Define the output directory
     output_dir = 'output'
-    # Create the output directory if it doesn't exist
     os.makedirs(output_dir, exist_ok=True)
 
     print(f"Attempting to load items from: {items_csv_file}")
@@ -143,9 +123,7 @@ if __name__ == "__main__":
                     if recipe_name not in grouped_missing_items:
                         grouped_missing_items[recipe_name] = []
                     grouped_missing_items[recipe_name].append({
-                        'original_name': item_info['missing_ingredient_name'],
-                        'cleaned_name': item_info.get('cleaned_missing_ingredient_name', 'N/A'), # Use .get for safety
-                        'column': item_info['ingredient_column']
+                        'original_name': item_info['missing_ingredient_name']
                     })
 
                 recipes_with_issues_count = len(grouped_missing_items) # Count of unique recipes with issues
@@ -171,16 +149,16 @@ if __name__ == "__main__":
         print("\nNo augmented recipes data to save.")
 
 
-    # --- Saving the separate missing items report (optional, raw list) ---
+    # --- Saving the separate missing items report, raw list) ---
     if missing_items_output and not (missing_items_output and isinstance(missing_items_output[0], dict) and "error" in missing_items_output[0]):
         if missing_items_output:
             try:
                 report_df = pd.DataFrame(missing_items_output)
-                # Define the output file path for the report within the output directory
+
                 output_filename_report = os.path.join(output_dir, 'missing_ingredients_summary_report_raw.csv')
                 report_df.to_csv(output_filename_report, index=False)
                 print(f"\nRaw summary report of missing ingredients saved to: {output_filename_report}")
             except Exception as e:
                 print(f"Error saving raw summary report CSV: {e}")
-    # The commented out section for statistics was removed as it seemed incomplete in the original.
-    # If you want to add it back, ensure it's correctly implemented.
+
+
