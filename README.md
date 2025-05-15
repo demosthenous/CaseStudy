@@ -63,9 +63,9 @@ Navigate to the `src` directory in your terminal and run the scripts using Pytho
 
 1.  **Run the scripts**
     ```bash
-    python find_missing_ingredients.py
-    python validate_items.py
-    python validate_recipe_details.py
+    python src/find_missing_ingredients.py
+    python src/validate_items.py
+    python src/validate_recipe_details.py
     ```
     * **Output:**
         * Console messages summarizing findings.
