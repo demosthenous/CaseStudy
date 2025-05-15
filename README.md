@@ -106,7 +106,7 @@ Review the console output for summaries and check the generated CSV files in the
     * Move all configurable parameters (allowed UOMs, thresholds, column names, file paths) into external configuration files (e.g., JSON, YAML) instead of hardcoding them in the scripts. This would make the suite much more flexible and easier to adapt for different users/datasets without code changes.
 
 2.  **Integrated Pipeline & Workflow:**
-    * Create a master script or a simple CLI (Command Line Interface) tool that allows running selected validations in a sequence, potentially using the output of one script as an input or guide for another.
+    * Create a master script or a simple CLI tool that allows running selected validations in a sequence, potentially using the output of one script as an input or guide for another.
     * For instance, after `validate_items.py`, use its output to refine the `items.csv` before running `find_missing_ingredients.py`.
 
 3.  **Enhanced UOM Conversion & Management:**
